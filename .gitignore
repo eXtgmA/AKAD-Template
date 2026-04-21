@@ -1,0 +1,9 @@
+# Project exclude paths
+/out/
+/.idea/AKAD-Template.iml
+/.idea/db-forest-config.xml
+/.idea/go.imports.xml
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/vcs.xml
+/.idea/workspace.xml

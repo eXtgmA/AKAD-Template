@@ -1,0 +1,353 @@
+%! Author = VORNAME NACHNAME
+%! Date = TT.MM.JJ
+
+% Preamble
+\documentclass[12pt, a4paper, oneside]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[ngerman]{babel}
+\usepackage{mathptmx}        % Times New Roman (Schriftart)
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{parskip}
+\usepackage{lipsum}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, fit, backgrounds, positioning, calc}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{needspace}
+\usepackage{acronym}
+\usepackage{booktabs}            % Professionelle Tabellenlinien
+\usepackage{tabularx}            % Flexible Tabellenbreite
+\usepackage{colortbl}            % Farbige Tabellenzeilen
+\usepackage{etoolbox}            % Makro-Werkzeuge (gappto etc.)
+\usepackage[toc,title]{appendix} % Anhangsverzeichnis
+\usepackage{listings}            % Quellcode-Listings (Anhang)
+
+% Listing-Style für Quellcode-Auszüge im Anhang
+\definecolor{lstbg}{rgb}{0.97,0.97,0.97}
+\definecolor{lstkw}{rgb}{0.10,0.30,0.65}
+\definecolor{lstcm}{rgb}{0.30,0.55,0.30}
+\definecolor{lststr}{rgb}{0.65,0.15,0.15}
+\lstdefinestyle{code}{
+    backgroundcolor=\color{lstbg},
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{lstkw}\bfseries,
+    commentstyle=\color{lstcm}\itshape,
+    stringstyle=\color{lststr},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{gray!40},
+    breaklines=true,
+    breakatwhitespace=true,
+    columns=fullflexible,
+    showstringspaces=false,
+    tabsize=2,
+    captionpos=b,
+    aboveskip=8pt,
+    belowskip=8pt,
+}
+\lstset{style=code}
+\usepackage[
+    backend=biber,
+    style=verbose-ibid,   % volle bibliographische Angabe in der Fußnote, danach „ebd.“
+    citetracker=true,
+    sorting=nyt
+]{biblatex}
+
+% ============================================================
+%  Deutsches Fußnoten-Zitierformat
+%  Ziel: Nachname V.: Titel, Ort Jahr[, URL: <url> [aufgerufen TT.MM.JJJJ]], S. X
+% ============================================================
+
+% 1) Autorenformat → „Nachname V." (Nachname + Initiale mit Punkt)
+\DeclareNameFormat{last-init}{%
+  \namepartfamily
+  \ifblank{\namepartgiveni}{}{\addspace\namepartgiveni}%
+  \ifthenelse{\value{listcount}<\value{liststop}}
+    {\addcomma\addspace}{}%
+}
+\DeclareNameAlias{author}{last-init}
+\DeclareNameAlias{editor}{last-init}
+
+% 2) Doppelpunkt nach Autorenname (in Zitationen UND Literaturverzeichnis)
+%    nametitledelim wird in allen Kontexten auf Doppelpunkt gesetzt
+\DeclareDelimFormat{nametitledelim}{\addcolon\addspace}
+\DeclareDelimFormat[bib,biblist]{nametitledelim}{\addcolon\addspace}
+
+% 3) Kein Verlag – nur Ort + Jahr: „Heidelberg 2002"
+\renewbibmacro*{publisher+location+date}{%
+  \printlist{location}%
+  \iflistundef{location}{}{\setunit{\addspace}}%
+  \usebibmacro{date}%
+  \newunit
+}
+
+% 4) URL-Feld: „URL: <url>"
+\DeclareFieldFormat{url}{URL\addcolon\addspace\url{#1}}
+
+% 5) urldate: „[aufgerufen TT.MM.JJJJ]"
+\DeclareFieldFormat{urldate}{%
+  \mkbibbrackets{aufgerufen\addspace
+    \iffieldundef{urlday}{}{\mkdatezeros{\thefield{urlday}}\adddot}%
+    \iffieldundef{urlmonth}{}{\mkdatezeros{\thefield{urlmonth}}\adddot}%
+    \thefield{urlyear}}%
+}
+
+% 7) In Zitationen: ISBN, ISSN, DOI und Auflage unterdrücken
+\AtEveryCitekey{%
+  \clearfield{isbn}%
+  \clearfield{issn}%
+  \clearfield{doi}%
+  \clearfield{edition}%
+  \clearfield{pagetotal}%
+}
+
+% ibidem-String
+\DefineBibliographyStrings{ngerman}{%
+    ibidem = {ebd\adddot}
+}
+
+\addbibresource{bibliography/literatur.bib}
+\geometry{top=3cm, bottom=3cm, left=2.5cm, right=2cm}
+\setlength{\headheight}{14.5pt}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+% Appendix-Namen auf Deutsch
+\renewcommand{\appendixname}{Anhang}
+\renewcommand{\appendixtocname}{Anhang}
+\renewcommand{\appendixpagename}{Anhang}
+
+% Header & Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{VORNAME NACHNAME}           % TODO: Name anpassen
+\lhead{MODULKÜRZEL -- Assignment}  % TODO: Modul anpassen
+\cfoot{\thepage}
+
+% Zähler um römische Seitenzahl am Ende fortzuführen
+\newcounter{frontpages}
+
+%-----------------------------------------------------------
+% AI-VERZEICHNIS: Deklarations-System (analog zu .bib)
+%  \aitool{Name}{Einsatzform}{Bemerkungen}
+%  \printAIVerzeichnis  →  rendert die Tabelle (Nr. automatisch)
+%-----------------------------------------------------------
+\newcommand{\aitools}{}          % interner Datenpuffer
+\newcounter{aitoolrow}           % Auto-Zähler (wird beim Rendern hochgezählt)
+\newif\iffirstaitool             % Flag für ersten Eintrag
+\firstaitooltrue
+
+\newcommand{\aitool}[3]{%
+    \iffirstaitool
+        \global\firstaitoolfalse
+    \else
+        \gappto\aitools{\midrule}%
+    \fi
+    \gappto\aitools{\stepcounter{aitoolrow}\theaitoolrow & \textbf{#1} & #2 & #3 \\}%
+}
+
+\newcommand{\printAIVerzeichnis}{%
+    \setcounter{aitoolrow}{0}%   % Zähler vor jedem Druck zurücksetzen
+    \renewcommand{\arraystretch}{1.4}%
+    \begin{tabularx}{\textwidth}{%
+        >{\centering\arraybackslash}p{0.6cm}%
+        p{3.4cm}%
+        X%
+        X%
+    }%
+    \toprule%
+    \rowcolor{gray!20}%
+    \textbf{Nr.} & \textbf{AI-Hilfsmittel} & \textbf{Einsatzform} & \textbf{Bemerkungen} \\%
+    \midrule%
+    \aitools%
+    \bottomrule%
+    \end{tabularx}%
+    \renewcommand{\arraystretch}{1}%
+}
+
+% Datei laden (analog zu \addbibresource)
+\input{bibliography/ai-tools}
+
+% Document
+\begin{document}
+\onehalfspacing
+
+%-----------------------------------------------------------
+% DECKBLATT (keine Seitenzahl)
+%-----------------------------------------------------------
+\pagenumbering{Roman}
+\begin{titlepage}
+    \thispagestyle{empty}
+    \centering
+
+    % Logo oben
+    \vspace*{0.5cm}
+    \includegraphics[width=0.45\textwidth]{assets/images/akad_logo}\\[1.5cm]
+
+    % Trennlinie
+    \textcolor{gray}{\rule{\linewidth}{0.4mm}}\\[0.6cm]
+
+    % Titel
+    {\fontsize{20}{24}\selectfont \textbf{TITEL DER ARBEIT}}\\[0.5cm]  % TODO
+
+    % Untertitel
+    {\large \textcolor{gray}{\textit{UNTERTITEL DER ARBEIT}}}\\[0.6cm]  % TODO
+
+    \textcolor{gray}{\rule{\linewidth}{0.4mm}}\\[1.5cm]
+
+    % Infobox
+    \begin{tabular}{r@{\hspace{0.8cm}}l}
+        \textbf{Verfasser}      & VORNAME NACHNAME \\[0.4cm]   % TODO
+        \textbf{Matrikelnummer} & MATRIKELNUMMER \\[0.4cm]      % TODO
+        \textbf{Modul}          & MODULKÜRZEL \\[0.4cm]         % TODO
+        \textbf{Betreuer}       & Prof. Dr. BETREUER \\[0.4cm]  % TODO
+        \textbf{Abgabedatum}    & TT. Monat JJJJ \\             % TODO
+    \end{tabular}
+
+    \vfill
+\end{titlepage}
+
+%-----------------------------------------------------------
+% INHALTSVERZEICHNIS
+%-----------------------------------------------------------
+\clearpage
+\pagestyle{empty}
+\tableofcontents
+\clearpage
+\pagestyle{fancy}
+
+%-----------------------------------------------------------
+% ABBILDUNGSVERZEICHNIS - Römische Seitenzahl ab I
+%-----------------------------------------------------------
+\setcounter{page}{1}
+\listoffigures
+\addcontentsline{toc}{section}{Abbildungsverzeichnis}
+\newpage
+
+%-----------------------------------------------------------
+% TABELLENVERZEICHNIS
+%-----------------------------------------------------------
+\listoftables
+\addcontentsline{toc}{section}{Tabellenverzeichnis}
+\newpage
+
+%-----------------------------------------------------------
+% ABKÜRZUNGSVERZEICHNIS
+%-----------------------------------------------------------
+\section*{Abkürzungsverzeichnis}
+\addcontentsline{toc}{section}{Abkürzungsverzeichnis}
+\label{sec:abkuerzungen}
+
+\begin{acronym}[PLACEHOLDER]
+    % TODO: Abkürzungen eintragen
+    % Syntax: \acro{kürzel}[ANZEIGE]{Ausgeschriebener Begriff}
+    % Beispiele:
+    \acro{api}[API]{Application Programming Interface}
+    \acro{sql}[SQL]{Structured Query Language}
+\end{acronym}
+
+% Römische Seitenzahl merken, bevor Hauptteil beginnt
+\setcounter{frontpages}{\value{page}}
+\newpage
+
+%-----------------------------------------------------------
+% INHALT - arabische Nummerierung ab 1
+%-----------------------------------------------------------
+\pagenumbering{arabic}
+\input{chapters/01_einleitung}
+\newpage
+
+\input{chapters/02_grundlagen}
+\newpage
+
+\input{chapters/03_hauptteil}
+\newpage
+
+\input{chapters/04_fazit}
+\newpage
+
+%-----------------------------------------------------------
+% BACKMATTER - römische Nummerierung, fortführend
+%-----------------------------------------------------------
+\hypersetup{pageanchor=false}
+\pagenumbering{Roman}
+\setcounter{page}{\value{frontpages}}
+\stepcounter{page}
+\hypersetup{pageanchor=true}
+
+%-----------------------------------------------------------
+% LITERATURVERZEICHNIS
+%-----------------------------------------------------------
+\printbibliography[heading=bibintoc, title={Literaturverzeichnis}]
+\newpage
+
+%-----------------------------------------------------------
+% AI-VERZEICHNIS
+%-----------------------------------------------------------
+\section*{AI-Verzeichnis}
+\addcontentsline{toc}{section}{AI-Verzeichnis}
+
+In der vorliegenden Arbeit wurden folgende KI-basierte Anwendungen und Werkzeuge genutzt:
+
+\vspace{0.5cm}
+\noindent
+\printAIVerzeichnis
+\newpage
+
+%-----------------------------------------------------------
+% ANHANGSVERZEICHNIS
+%-----------------------------------------------------------
+\addcontentsline{toc}{section}{Anhangsverzeichnis}
+\listofappendices
+\newpage
+
+%-----------------------------------------------------------
+% ANHANG
+%-----------------------------------------------------------
+\begin{appendices}
+\input{appendix/anhang}
+\end{appendices}
+
+\newpage
+
+%-----------------------------------------------------------
+% EIDESSTATTLICHE ERKLÄRUNG (keine Seitenzahl im Verzeichnis)
+%-----------------------------------------------------------
+\thispagestyle{fancy}
+\section*{Eidesstattliche Erklärung}
+
+Ich versichere, dass ich die vorliegende Arbeit selbstständig verfasst, keine
+anderen als die angegebenen Quellen und Hilfsmittel benutzt sowie alle wörtlich
+oder sinngemäß übernommenen Stellen in der Arbeit gekennzeichnet habe. Alle
+Teile meiner Arbeit, die wortwörtlich oder dem Sinn nach anderen Werken
+entnommen sind, wurden unter Angabe der Quelle kenntlich gemacht. Gleiches gilt
+auch für Zeichnungen, Skizzen, bildliche Darstellung sowie für Quellen aus dem
+Internet, dazu zählen auch KI-basierte Anwendungen oder Werkzeuge. Die Arbeit
+wurde in gleicher oder ähnlicher Form noch nicht als Prüfungsleistung eingereicht.
+
+\vspace{2.5cm}
+
+\noindent
+\begin{tabular}{p{6cm} p{2cm} p{6cm}}
+    \hrulefill & & \hrulefill \\[0.3cm]
+    Ort, Datum & & Unterschrift
+\end{tabular}
+
+\end{document}
